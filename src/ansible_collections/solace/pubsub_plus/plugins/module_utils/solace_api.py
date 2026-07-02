@@ -542,8 +542,21 @@ class SolaceSempV1PagingGetApi(SolaceSempV1Api):
 class SolaceCloudApi(SolaceApi):
 
     ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_HOME = "ANSIBLE_SOLACE_SOLACE_CLOUD_HOME"
+    ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_STATIC_IP = "ANSIBLE_SOLACE_SOLACE_CLOUD_STATIC_IP"
     ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US = "us"
     ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_AU = "au"
+    ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_EU = "eu"
+    ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_SG = "sg"
+    # region -> dynamic API host. The static-IP (fixed egress IP) endpoints use the
+    # same host with a 'static-ip-' prefix, e.g. static-ip-api.solace.cloud.
+    SOLACE_CLOUD_API_HOSTS = {
+        ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US: "api.solace.cloud",
+        ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_AU: "api.solacecloud.com.au",
+        ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_EU: "api.solacecloud.eu",
+        ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_SG: "api.solacecloud.sg",
+    }
+    SOLACE_CLOUD_API_PATH_SUFFIX = "/api/v0"
+    # retained for backwards compatibility with any external references
     API_BASE_PATH_US = "https://api.solace.cloud/api/v0"
     API_BASE_PATH_AU = "https://api.solacecloud.com.au/api/v0"
 
@@ -556,27 +569,36 @@ class SolaceCloudApi(SolaceApi):
         super().__init__(module)
         return
 
-    def get_api_base_path(self, config: SolaceTaskSolaceCloudConfig) -> str:
-        solace_cloud_home_value = self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US
-
+    def _get_solace_cloud_home(self, config: SolaceTaskSolaceCloudConfig) -> str:
+        # the module option takes precedence (already validated by the argspec
+        # choices), then the env var, then default to 'us'.
         if config.solace_cloud_home is not None and config.solace_cloud_home != '':
-            solace_cloud_home_value = config.solace_cloud_home.lower()
-        else:
-            solaceCloudHomeEnvVal = os.getenv(
-                self.ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_HOME)
-            if solaceCloudHomeEnvVal is not None and solaceCloudHomeEnvVal != '':
-                if solaceCloudHomeEnvVal.lower() == self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US:
-                    solace_cloud_home_value = self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US
-                elif solaceCloudHomeEnvVal.lower() == self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_AU:
-                    solace_cloud_home_value = self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_AU
-                else:
-                    raise SolaceEnvVarError(self.ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_HOME,
-                                            solaceCloudHomeEnvVal,
-                                            f"allowed values: {self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US}, {self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_AU}")
-        if solace_cloud_home_value == self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US:
-            return self.API_BASE_PATH_US
-        else:
-            return self.API_BASE_PATH_AU
+            return config.solace_cloud_home.lower()
+        env_val = os.getenv(self.ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_HOME)
+        if env_val is None or env_val == '':
+            return self.ANSIBLE_SOLACE_SOLACE_CLOUD_HOME_US
+        region = env_val.lower()
+        if region not in self.SOLACE_CLOUD_API_HOSTS:
+            raise SolaceEnvVarError(
+                self.ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_HOME, env_val,
+                f"allowed values: {', '.join(sorted(self.SOLACE_CLOUD_API_HOSTS))}")
+        return region
+
+    def _use_solace_cloud_static_ip(self, config: SolaceTaskSolaceCloudConfig) -> bool:
+        # the module option takes precedence, then the env var, then False.
+        option = getattr(config, 'solace_cloud_static_ip', None)
+        if option is not None:
+            return bool(option)
+        env_val = os.getenv(self.ENV_VAR_ANSIBLE_SOLACE_SOLACE_CLOUD_STATIC_IP)
+        if env_val is None or env_val == '':
+            return False
+        return env_val.strip().lower() in ('1', 'true', 'yes', 'on')
+
+    def get_api_base_path(self, config: SolaceTaskSolaceCloudConfig) -> str:
+        host = self.SOLACE_CLOUD_API_HOSTS[self._get_solace_cloud_home(config)]
+        if self._use_solace_cloud_static_ip(config):
+            host = "static-ip-" + host
+        return f"https://{host}{self.SOLACE_CLOUD_API_PATH_SUFFIX}"
 
     def get_auth(self, config: SolaceTaskBrokerConfig) -> str:
         return config.get_solace_cloud_auth()

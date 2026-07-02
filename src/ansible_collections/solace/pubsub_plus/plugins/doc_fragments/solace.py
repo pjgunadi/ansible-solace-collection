@@ -112,9 +112,19 @@ options:
     choices:
       - us
       - au
+      - eu
+      - sg
       - US
       - AU
+      - EU
+      - SG
       - ''
+  solace_cloud_static_ip:
+    description:
+      - Use the Solace Cloud static (fixed egress) IP API endpoints instead of the dynamic ones. Defaults to false.
+      - "Can also be set via the environment variable ANSIBLE_SOLACE_SOLACE_CLOUD_STATIC_IP."
+    type: bool
+    required: false
   solace_cloud_api_token:
     description:
       - The API Token.
@@ -140,9 +150,19 @@ options:
     choices:
       - us
       - au
+      - eu
+      - sg
       - US
       - AU
+      - EU
+      - SG
       - ''
+  solace_cloud_static_ip:
+    description:
+      - Use the Solace Cloud static (fixed egress) IP API endpoints instead of the dynamic ones. Defaults to false.
+      - "Can also be set via the environment variable ANSIBLE_SOLACE_SOLACE_CLOUD_STATIC_IP."
+    type: bool
+    required: false
   solace_cloud_api_token:
     description:
       - The API Token.
@@ -168,9 +188,19 @@ options:
     choices:
       - us
       - au
+      - eu
+      - sg
       - US
       - AU
+      - EU
+      - SG
       - ''
+  solace_cloud_static_ip:
+    description:
+      - Use the Solace Cloud static (fixed egress) IP API endpoints instead of the dynamic ones. Defaults to false.
+      - "Can also be set via the environment variable ANSIBLE_SOLACE_SOLACE_CLOUD_STATIC_IP."
+    type: bool
+    required: false
   solace_cloud_api_token:
     description:
       - The API Token.
