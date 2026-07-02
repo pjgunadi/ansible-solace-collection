@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-scriptName=$(basename $(test -L "$0" && readlink "$0" || echo "$0"));
+scriptName=$(basename "$(test -L "$0" && readlink "$0" || echo "$0")");
 
 ############################################################################################################################
 # Bootstrap Ubuntu-18 VM with prerequisites to run role solace_broker_service.
@@ -20,7 +20,7 @@ scriptName=$(basename $(test -L "$0" && readlink "$0" || echo "$0"));
 
 echo " >>> Bootstrap vm ..."
 
-ssh "$vmAdminUsr@$vmPublicIpAddress" <<BOOT_EOL
+if ! ssh "$vmAdminUsr@$vmPublicIpAddress" <<BOOT_EOL
   sudo apt-get update
   sudo apt-get -y upgrade
   echo ">>> docker =================================================="
@@ -39,8 +39,9 @@ ssh "$vmAdminUsr@$vmPublicIpAddress" <<BOOT_EOL
   sudo apt-get update
   sudo apt-get -y upgrade
 BOOT_EOL
-
-if [[ $? != 0 ]]; then echo " >>> XT_ERROR: bootstrap vm"; exit 1; fi
+then
+  echo " >>> XT_ERROR: bootstrap vm"; exit 1
+fi
 
 echo " >>> Success."
 

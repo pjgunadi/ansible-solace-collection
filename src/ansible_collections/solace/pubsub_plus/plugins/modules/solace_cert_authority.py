@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2022, Solace Corporation, Ricardo Gomez-Ulmke, <ricardo.gomez-ulmke@solace.com>
+# Copyright (c) 2022, Solace Corporation
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -16,14 +16,15 @@ module: solace_cert_authority
 short_description: certificate authority
 description:
 - "Allows addition, removal and configuration of certificate authority objects on Solace Brokers in an idempotent manner."
-- "Supports only standalone brokers. The Solace Cloud API is not supported, use M(solace_client_cert_authority) or M(solace_domain_cert_authority) instead."
+- "Supports only standalone brokers. The Solace Cloud API is not supported, use M(solace.pubsub_plus.solace_client_cert_authority) or
+  M(solace.pubsub_plus.solace_domain_cert_authority) instead."
 notes:
 - "Module Sempv2 Config: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/certAuthority"
 - "Uses deprecated SempV2 API. Since 2.19, broker supports 'clientCertAuthority' & 'domainCertAuthority' instead."
 seealso:
-- module: solace_get_cert_authorities
-- module: solace_client_cert_authority
-- module: solace_domain_cert_authority
+- module: solace.pubsub_plus.solace_get_cert_authorities
+- module: solace.pubsub_plus.solace_client_cert_authority
+- module: solace.pubsub_plus.solace_domain_cert_authority
 options:
   name:
     description: The name of the Certificate Authority. Maps to 'certAuthorityName' in the Sempv2 API.
@@ -105,7 +106,7 @@ rc:
             rc: 1
 '''
 
-from ansible_collections.solace.pubsub_plus.plugins.module_utils import solace_sys
+from ansible_collections.solace.pubsub_plus.plugins.module_utils import solace_sys  # pylint: disable=unused-import
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task import SolaceBrokerCRUDTask
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_api import SolaceSempV2Api
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task_config import SolaceTaskBrokerConfig

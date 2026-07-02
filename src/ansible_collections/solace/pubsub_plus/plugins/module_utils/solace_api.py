@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Solace Corporation, Ricardo Gomez-Ulmke, <ricardo.gomez-ulmke@solace.com>
+# Copyright (c) 2020, Solace Corporation
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import (absolute_import, division, print_function)
@@ -8,7 +8,9 @@ __metaclass__ = type
 from ansible_collections.solace.pubsub_plus.plugins.module_utils import solace_sys
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_utils import SolaceUtils
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_consts import SolaceTaskOps
-from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_error import SolaceCloudApiError, SolaceCloudApiResponseDataError, SolaceEnvVarError, SolaceError, SolaceInternalErrorAbstractMethod, SolaceApiError, SolaceParamsValidationError
+from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_error import (
+    SolaceCloudApiError, SolaceCloudApiResponseDataError, SolaceEnvVarError, SolaceError,
+    SolaceInternalErrorAbstractMethod, SolaceApiError, SolaceParamsValidationError)
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_error import SolaceInternalError
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task_config import SolaceTaskConfig, SolaceTaskBrokerConfig, SolaceTaskSolaceCloudConfig
 from ansible.module_utils.basic import AnsibleModule
@@ -180,7 +182,7 @@ class SolaceApi(object):
 
     @staticmethod
     def compose_path(path_array, safe=','):
-        if not type(path_array) is list:
+        if not isinstance(path_array, list):
             raise TypeError(
                 f"argument 'path_array' is not an array but {type(path_array)}")
         # ensure elements are 'url encoded'
