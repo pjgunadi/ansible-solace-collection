@@ -14,7 +14,8 @@ default_generate:
     virtual_router: primary
 default_docker_compose_settings:
   project_name: "{{ args.__required__ }}"
-  restarted: yes
+  # note: docker_compose_v2 has no 'restarted' option; 'recreate: always' recreates
+  # (and thus restarts) the containers on every run, preserving the previous behaviour.
   recreate: always
   state: present
   definition:
@@ -55,7 +56,7 @@ default_docker_compose_settings:
           - '8883:8883'
           #SEMP over TLS
           # - "1943:1943"
-          #SEMP / PubSub+ Manager
+          #SEMP / Broker Manager
           - "{{ combined_generate.inventory_settings.sempv2_port }}:8080"
           #REST Default VPN
           - '9000:9000'

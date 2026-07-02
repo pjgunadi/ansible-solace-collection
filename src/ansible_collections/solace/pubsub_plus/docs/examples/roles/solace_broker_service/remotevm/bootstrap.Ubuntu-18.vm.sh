@@ -28,13 +28,15 @@ if ! ssh "$vmAdminUsr@$vmPublicIpAddress" <<BOOT_EOL
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
   sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
   apt-cache policy docker-ce
-  sudo apt-get install --upgrade docker-ce -y
+  # docker-compose-plugin provides Compose V2 (docker compose), required by
+  # community.docker.docker_compose_v2. The End-of-Life 'docker-compose' (v1)
+  # Python package is no longer installed.
+  sudo apt-get install --upgrade docker-ce docker-compose-plugin -y
   echo ">>> python =================================================="
   sudo apt-get install --upgrade python3
   sudo apt-get install --upgrade python3-pip -y
   sudo -H python3 -m pip install --upgrade pip
   sudo -H python3 -m pip install --upgrade docker
-  sudo -H python3 -m pip install --upgrade docker-compose
   echo ">>> upgrading =================================================="
   sudo apt-get update
   sudo apt-get -y upgrade

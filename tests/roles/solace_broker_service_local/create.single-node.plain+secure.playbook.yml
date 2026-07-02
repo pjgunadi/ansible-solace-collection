@@ -150,8 +150,6 @@
           - primary
         definition: "{{ _docker_compose_definition }}"
         recreate: always
-        restarted: yes
-        debug: yes
         state: present
   - assert:
       that:
