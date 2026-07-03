@@ -133,7 +133,9 @@
             environment:
               - "username_admin_globalaccesslevel={{ _generated_inventory_settings.sempv2_username }}"
               - "username_admin_password={{ _generated_inventory_settings.sempv2_password }}"
-              - system_scaling_maxconnectioncount=100
+              - system_scaling_maxconnectioncount=1000
+              - system_scaling_maxkafkabridgecount=10
+              - system_scaling_maxkafkabrokerconnectioncount=300
               - "tls_servercertificate_filepath=/run/secrets/{{ _ssl_cert_filename }}"
 
   - name: "Broker Service Up"

@@ -7,7 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
+                    'status': ['deprecated'],
                     'supported_by': 'community'}
 
 DOCUMENTATION = '''
@@ -18,6 +18,10 @@ description:
 - "Allows addition, removal and configuration of certificate authority objects on Solace Brokers in an idempotent manner."
 - "Supports only standalone brokers. The Solace Cloud API is not supported, use M(solace.pubsub_plus.solace_client_cert_authority) or
   M(solace.pubsub_plus.solace_domain_cert_authority) instead."
+deprecated:
+  removed_in: 2.0.0
+  why: "The broker deprecated the 'certAuthority' SEMP object since version 2.19 in favor of 'clientCertAuthority' and 'domainCertAuthority'."
+  alternative: "Use M(solace.pubsub_plus.solace_client_cert_authority) or M(solace.pubsub_plus.solace_domain_cert_authority) instead."
 notes:
 - "Module Sempv2 Config: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/certAuthority"
 - "Uses deprecated SempV2 API. Since 2.19, broker supports 'clientCertAuthority' & 'domainCertAuthority' instead."

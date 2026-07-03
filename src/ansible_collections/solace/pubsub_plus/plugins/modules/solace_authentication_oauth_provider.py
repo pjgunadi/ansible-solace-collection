@@ -7,7 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
+                    'status': ['deprecated'],
                     'supported_by': 'community'}
 
 DOCUMENTATION = '''
@@ -16,6 +16,10 @@ module: solace_authentication_oauth_provider
 short_description: oauth provider
 description:
 - "Configure a Authentication OAuth Provider object on a Message Vpn. Allows addition, removal and configuration of objects in an idempotent manner."
+deprecated:
+  removed_in: 2.0.0
+  why: "The broker deprecated the 'authenticationOauthProvider' SEMP object in favor of the 'authenticationOauthProfile' object."
+  alternative: "Use M(solace.pubsub_plus.solace_authentication_oauth_profile) instead."
 notes:
 - "Module Sempv2 Config: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/authenticationOauthProvider"
 options:

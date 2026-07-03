@@ -7,7 +7,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
+                    'status': ['deprecated'],
                     'supported_by': 'community'}
 
 DOCUMENTATION = '''
@@ -16,6 +16,10 @@ module: solace_bridge_trusted_cn
 short_description: trusted common name for bridge
 description:
   - "Allows addition and removal of trusted commonn name objects on a bridge in an idempotent manner."
+deprecated:
+  removed_in: 2.0.0
+  why: "The broker deprecated TLS Trusted Common Names in favor of Certificate Matching Rules."
+  alternative: "Use M(solace.pubsub_plus.solace_cert_matching_rule) and its condition/attribute-filter modules instead."
 notes:
 - "Module Sempv2 Config: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/bridge/\
   createMsgVpnBridgeTlsTrustedCommonName"

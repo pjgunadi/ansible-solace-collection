@@ -169,8 +169,7 @@ class SolaceACLSubscribeShareNameExceptionTask(SolaceBrokerCRUDTask):
         return self.sempv2_api.make_post_request(self.get_config(), path_array, data)
 
     def delete_func(self, vpn_name, acl_profile_name, topic_syntax, subscribe_share_name_exception):
-        # DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/
-        # subscribeShareNameExceptions/{subscribeShareNameExceptionSyntax},{subscribeShareNameException}
+        # DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/subscribeShareNameExceptions/{subscribeShareNameExceptionSyntax},{subscribeShareNameException}
         ex_uri = ','.join([topic_syntax, subscribe_share_name_exception])
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name,
                       'aclProfiles', acl_profile_name, 'subscribeShareNameExceptions', ex_uri]

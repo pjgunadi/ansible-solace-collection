@@ -242,7 +242,9 @@ Example Output Docker Compose Settings
         environment:
         - username_admin_globalaccesslevel=admin
         - username_admin_password=admin
-        - system_scaling_maxconnectioncount=100
+        - system_scaling_maxconnectioncount=1000
+        - system_scaling_maxkafkabridgecount=10
+              - system_scaling_maxkafkabrokerconnectioncount=300
         - tls_servercertificate_filepath=/run/secrets/asc.pem
         image: solace/solace-pubsub-standard:latest
         ports:

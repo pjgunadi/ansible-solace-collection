@@ -1035,3 +1035,179 @@ class SolaceCloudApiCertAuthority(SolaceCloudApi):
         resp = self.get_object_settings(config, path_array)
         cert_authority = resp['certificate']
         return self.filter(cert_authority, query_params)
+
+
+class SolaceCloudApiV2(SolaceCloudApi):
+    """Accessor for the Solace PubSub+ Cloud v2 REST APIs.
+
+    Reference: https://api.solace.dev/cloud/reference/using-the-v2-rest-apis-for-pubsub-cloud
+
+    The v2 APIs reuse the same regional hosts, static-IP endpoints and Bearer-token
+    authentication as the v0 API (inherited from SolaceCloudApi). They differ in:
+    - base path: '/api/v2' instead of '/api/v0'
+    - successful responses are wrapped in a '{"data": ..., "meta": ...}' envelope;
+      this class returns the unwrapped 'data' element.
+    """
+
+    SOLACE_CLOUD_API_PATH_SUFFIX_V2 = "/api/v2"
+
+    # API groups / resources
+    API_MISSION_CONTROL = "missionControl"
+    API_EVENT_BROKER_SERVICES = "eventBrokerServices"
+
+    def __init__(self, module: AnsibleModule):
+        super().__init__(module)
+        return
+
+    def get_api_base_path(self, config: SolaceTaskSolaceCloudConfig) -> str:
+        # https://{host}/api/v2  (honours the region and static-ip options, same as v0)
+        host = self.SOLACE_CLOUD_API_HOSTS[self._get_solace_cloud_home(config)]
+        if self._use_solace_cloud_static_ip(config):
+            host = "static-ip-" + host
+        return f"https://{host}{self.SOLACE_CLOUD_API_PATH_SUFFIX_V2}"
+
+    def get_mission_control_base_path_array(self, config: SolaceTaskSolaceCloudConfig) -> list:
+        # [https://{host}/api/v2, missionControl]
+        return [self.get_api_base_path(config), self.API_MISSION_CONTROL]
+
+    def handle_response(self, resp, module_op):
+        # v2: 200 (get/patch), 201 (create), 202 (accepted, async operation), 204 (no content, delete)
+        if resp.status_code not in [200, 201, 202, 204]:
+            self.handle_bad_response(resp, module_op)
+        return self.handle_good_response(resp, module_op)
+
+    def handle_good_response(self, resp, module_op):
+        # v2 wraps payloads in {"data": ..., "meta": ...}; return the 'data' element.
+        # fall back to the full body if there is no envelope.
+        if resp.text:
+            j = resp.json()
+            if isinstance(j, dict) and 'data' in j:
+                return j['data']
+            return j
+        return {}
+
+    def get_object_settings(self, config: SolaceTaskSolaceCloudConfig, path_array: list, query_params=None) -> dict:
+        # returns the unwrapped 'data' object, or None if not found (404)
+        module_op = SolaceTaskOps.OP_READ_OBJECT
+        try:
+            return self.make_get_request(config, path_array, module_op, query_params=query_params)
+        except SolaceApiError as e:
+            resp = e.get_resp()
+            if resp['status_code'] == 404:
+                return None
+            raise SolaceApiError(e.get_http_resp(), resp,
+                                 self.get_module()._name, module_op) from e
+
+    def get_event_broker_service(self, config: SolaceTaskSolaceCloudConfig, service_id: str) -> dict:
+        # GET /api/v2/missionControl/eventBrokerServices/{id}
+        # returns the service or None if not found
+        path_array = self.get_mission_control_base_path_array(
+            config) + [self.API_EVENT_BROKER_SERVICES, service_id]
+        return self.get_object_settings(config, path_array)
+
+    def get_event_broker_services(self, config: SolaceTaskSolaceCloudConfig, query_params=None) -> list:
+        # GET /api/v2/missionControl/eventBrokerServices
+        # NOTE: v2 list responses are paginated (see 'meta.pagination'); this returns the
+        # page addressed by query_params (first page by default). Pass query_params
+        # {'pageSize': N, 'pageNumber': M} to page through larger result sets.
+        module_op = SolaceTaskOps.OP_READ_OBJECT_LIST
+        path_array = self.get_mission_control_base_path_array(
+            config) + [self.API_EVENT_BROKER_SERVICES]
+        try:
+            resp = self.make_get_request(
+                config, path_array, module_op, query_params=query_params)
+        except SolaceApiError as e:
+            _resp = e.get_resp()
+            if _resp['status_code'] == 404:
+                return []
+            raise SolaceApiError(e.get_http_resp(), _resp,
+                                 self.get_module()._name, module_op) from e
+        if isinstance(resp, dict):
+            return [resp]
+        return resp
+
+    # ---------------------------------------------------------------------
+    # async operations
+    # v2 long-running requests return an 'operation' resource; poll it at
+    # GET /eventBrokerServices/{serviceId}/operations/{operationId} until the
+    # status is SUCCEEDED or FAILED.
+    # ---------------------------------------------------------------------
+    API_OPERATIONS = "operations"
+    OPERATION_STATUS_SUCCEEDED = "SUCCEEDED"
+    OPERATION_STATUS_FAILED = "FAILED"
+
+    def _is_operation(self, resp) -> bool:
+        return (isinstance(resp, dict)
+                and resp.get('type') == 'operation'
+                and 'id' in resp and 'status' in resp)
+
+    def get_operation(self, config: SolaceTaskSolaceCloudConfig, service_id: str, operation_id: str) -> dict:
+        # GET /api/v2/missionControl/eventBrokerServices/{serviceId}/operations/{operationId}
+        path_array = self.get_mission_control_base_path_array(config) + [
+            self.API_EVENT_BROKER_SERVICES, service_id, self.API_OPERATIONS, operation_id]
+        return self.make_get_request(config, path_array, SolaceTaskOps.OP_READ_OBJECT)
+
+    def wait_for_operation(self, config: SolaceTaskSolaceCloudConfig, operation: dict, timeout_minutes: int) -> dict:
+        module_op = SolaceTaskOps.OP_READ_OBJECT
+        service_id = operation.get('resourceId')
+        operation_id = operation.get('id')
+        if not service_id or not operation_id:
+            raise SolaceApiError(None, dict(
+                msg="cannot poll solace cloud operation: missing resourceId/id", operation=operation),
+                self.get_module()._name, module_op)
+        is_done = False
+        is_failed = False
+        try_count = -1
+        delay = 30  # seconds
+        max_retries = (timeout_minutes * 60) // delay
+        resp = operation
+        while not is_done and not is_failed and try_count < max_retries:
+            resp = self.get_operation(config, service_id, operation_id)
+            status = resp.get('status')
+            is_done = (status == self.OPERATION_STATUS_SUCCEEDED)
+            is_failed = (status == self.OPERATION_STATUS_FAILED)
+            try_count += 1
+            if not is_done and not is_failed and timeout_minutes > 0:
+                time.sleep(delay)
+        if is_failed:
+            raise SolaceApiError(None, dict(
+                msg="solace cloud operation failed", operation=resp),
+                self.get_module()._name, module_op)
+        if not is_done:
+            raise SolaceApiError(None, dict(
+                msg=f"timeout waiting for solace cloud operation to complete, timeout(mins)={timeout_minutes}", operation=resp),
+                self.get_module()._name, module_op)
+        return resp
+
+    def _maybe_wait_for_operation(self, config: SolaceTaskSolaceCloudConfig, resp, wait_timeout_minutes: int):
+        # if the response is an async operation and waiting is requested, poll to completion
+        if wait_timeout_minutes and wait_timeout_minutes > 0 and self._is_operation(resp):
+            return self.wait_for_operation(config, resp, wait_timeout_minutes)
+        return resp
+
+    # ---------------------------------------------------------------------
+    # event broker service CRUD (v2)
+    # ---------------------------------------------------------------------
+    def create_service(self, config: SolaceTaskSolaceCloudConfig, data: dict, wait_timeout_minutes: int = 0) -> dict:
+        # POST /api/v2/missionControl/eventBrokerServices
+        module_op = SolaceTaskOps.OP_CREATE_OBJECT
+        path_array = self.get_mission_control_base_path_array(
+            config) + [self.API_EVENT_BROKER_SERVICES]
+        resp = self.make_post_request(config, path_array, data, module_op)
+        return self._maybe_wait_for_operation(config, resp, wait_timeout_minutes)
+
+    def delete_service(self, config: SolaceTaskSolaceCloudConfig, service_id: str, wait_timeout_minutes: int = 0) -> dict:
+        # DELETE /api/v2/missionControl/eventBrokerServices/{id}
+        module_op = SolaceTaskOps.OP_DELETE_OBJECT
+        path_array = self.get_mission_control_base_path_array(
+            config) + [self.API_EVENT_BROKER_SERVICES, service_id]
+        resp = self.make_delete_request(config, path_array, module_op)
+        return self._maybe_wait_for_operation(config, resp, wait_timeout_minutes)
+
+    def find_service_by_name(self, config: SolaceTaskSolaceCloudConfig, name: str) -> dict:
+        # v2 services are identified by 'name'; returns the service dict or None
+        services = self.get_event_broker_services(config)
+        for service in services:
+            if isinstance(service, dict) and service.get('name') == name:
+                return service
+        return None

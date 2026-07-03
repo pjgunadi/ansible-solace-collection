@@ -25,7 +25,9 @@ services:
     environment:
       - username_admin_globalaccesslevel=admin
       - username_admin_password=admin
-      - system_scaling_maxconnectioncount=100
+      - system_scaling_maxconnectioncount=1000
+      - system_scaling_maxkafkabridgecount=10
+      - system_scaling_maxkafkabrokerconnectioncount=300
       #- routername=ansible-solace__test
       - "tls_servercertificate_filepath=/run/secrets/${CERT_FILE}"
 

@@ -177,8 +177,7 @@ class SolaceACLPublishTopicExceptionTask(SolaceBrokerCRUDTask):
 
     def get_func(self, vpn_name, acl_profile_name, topic_syntax, publish_topic_exception):
         # sempVersion <= "2.13" : GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/publishExceptions/{topicSyntax},{publishExceptionTopic}
-        # sempVersion >= "2.14": GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/
-        # publishTopicExceptions/{publishTopicExceptionSyntax},{publishTopicException}
+        # sempVersion >= "2.14": GET /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/publishTopicExceptions/{publishTopicExceptionSyntax},{publishTopicException}
         uri_subscr_ex = self.SEMP_VERSION_KEY_MAP[self.sempv2_version_map_key]['URI_SUBSCR_EX']
         ex_uri = ','.join([topic_syntax, publish_topic_exception])
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns',
@@ -202,8 +201,7 @@ class SolaceACLPublishTopicExceptionTask(SolaceBrokerCRUDTask):
 
     def delete_func(self, vpn_name, acl_profile_name, topic_syntax, publish_topic_exception):
         # sempVersion: <=2.13 : DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/publishExceptions/{topicSyntax},{publishExceptionTopic}
-        # sempVersion: >=2.14: DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/
-        # publishTopicExceptions/{publishTopicExceptionSyntax},{publishTopicException}
+        # sempVersion: >=2.14: DELETE /msgVpns/{msgVpnName}/aclProfiles/{aclProfileName}/publishTopicExceptions/{publishTopicExceptionSyntax},{publishTopicException}
         uri_subscr_ex = self.SEMP_VERSION_KEY_MAP[self.sempv2_version_map_key]['URI_SUBSCR_EX']
         ex_uri = ','.join([topic_syntax, publish_topic_exception])
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns',
