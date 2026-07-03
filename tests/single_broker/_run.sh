@@ -51,6 +51,7 @@ source $PROJECT_HOME/.lib/functions.sh
       "solace_telemetry_profile"
       "solace_topic_endpoint_template"
       "solace_virtual_hostname"
+      "solace_vpn_scenario"
       "teardown"
     )
   fi
