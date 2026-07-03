@@ -26,7 +26,7 @@ options:
     type: str
     aliases: [filter_name]
   cert_matching_rule_name:
-    description: The name of the Certificate Matching Rule. Maps to 'certMatchingRuleName' in the API.
+    description: The name of the Certificate Matching Rule. Maps to 'ruleName' in the API.
     required: true
     type: str
 extends_documentation_fragment:
@@ -69,7 +69,7 @@ tasks:
       cert_matching_rule_name: my-rule
       settings:
         attributeName: my-attribute
-        filterValue: my-value
+        attributeValue: my-value
       state: present
 '''
 
@@ -122,7 +122,7 @@ class SolaceCertMatchingRuleAttributeFilterTask(SolaceBrokerCRUDTask):
         # POST /msgVpns/{msgVpnName}/certMatchingRules/{certMatchingRuleName}/attributeFilters
         data = {
             'msgVpnName': vpn_name,
-            'certMatchingRuleName': cert_matching_rule_name,
+            'ruleName': cert_matching_rule_name,
             self.OBJECT_KEY: filter_name
         }
         data.update(settings if settings else {})

@@ -21,7 +21,7 @@ notes:
   createMsgVpnKafkaReceiverTopicBinding"
 options:
   name:
-    description: The name of the Topic Binding. Maps to 'topicBindingName' in the API.
+    description: The name of the Topic Binding. Maps to 'topicName' in the API.
     required: true
     type: str
     aliases: [topic_name, topic_binding_name]
@@ -99,7 +99,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 class SolaceKafkaReceiverTopicBindingTask(SolaceBrokerCRUDTask):
 
-    OBJECT_KEY = 'topicBindingName'
+    OBJECT_KEY = 'topicName'
 
     def __init__(self, module):
         super().__init__(module)

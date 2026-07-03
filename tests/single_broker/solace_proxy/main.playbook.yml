@@ -31,7 +31,7 @@
       solace_proxy:
         name: "{{ proxy }}"
         settings:
-          proxyType: http-connect
+          proxyType: http
           host: proxy.example.com
           port: 3128
         state: present

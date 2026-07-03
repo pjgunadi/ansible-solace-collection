@@ -131,7 +131,7 @@ class SolaceCloudClientProfileV2Task(SolaceCloudCRUDTask):
         data.update(settings if settings else {})
         resp = self.solace_cloud_api.make_post_request(
             self.get_config(), self._base_path_array(), data)
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self._service_id())
 
     def update_func(self, name, settings=None, delta_settings=None):
         # PUT .../clientProfiles/{name}
@@ -139,13 +139,13 @@ class SolaceCloudClientProfileV2Task(SolaceCloudCRUDTask):
         data.update(settings if settings else {})
         resp = self.solace_cloud_api.make_put_request(
             self.get_config(), self._base_path_array(name), data)
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self._service_id())
 
     def delete_func(self, name):
         # DELETE .../clientProfiles/{name}
         resp = self.solace_cloud_api.make_delete_request(
             self.get_config(), self._base_path_array(name))
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self._service_id())
 
 
 def run_module():

@@ -21,7 +21,7 @@ notes:
   createMsgVpnCertMatchingRule"
 options:
   name:
-    description: The name of the Certificate Matching Rule. Maps to 'certMatchingRuleName' in the API.
+    description: The name of the Certificate Matching Rule. Maps to 'ruleName' in the API.
     required: true
     type: str
     aliases: [cert_matching_rule_name]
@@ -96,7 +96,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 class SolaceCertMatchingRuleTask(SolaceBrokerCRUDTask):
 
-    OBJECT_KEY = 'certMatchingRuleName'
+    OBJECT_KEY = 'ruleName'
 
     def __init__(self, module):
         super().__init__(module)

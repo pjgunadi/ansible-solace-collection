@@ -19,7 +19,7 @@
       msg_vpn: "{{ vpn }}"
     solace.pubsub_plus.solace_get_authentication_kerberos_realms: *sc
   vars:
-    realm: "EXAMPLE.COM"
+    realm: "@EXAMPLE.COM"
   tasks:
     - name: "clean start"
       solace_authentication_kerberos_realm:

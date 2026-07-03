@@ -37,7 +37,7 @@
       solace_mqtt_retain_cache:
         name: "{{ cache }}"
         settings:
-          cacheSizeMaximum: 100
+          msgLifetime: 3600
         state: present
 
     - name: "get list"

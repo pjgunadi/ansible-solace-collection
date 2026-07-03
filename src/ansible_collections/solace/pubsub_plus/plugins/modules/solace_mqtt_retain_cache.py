@@ -21,7 +21,7 @@ notes:
   createMsgVpnMqttRetainCache"
 options:
   name:
-    description: The name of the MQTT Retain Cache. Maps to 'mqttRetainCacheName' in the API.
+    description: The name of the MQTT Retain Cache. Maps to 'cacheName' in the API.
     required: true
     type: str
     aliases: [mqtt_retain_cache, mqtt_retain_cache_name]
@@ -102,7 +102,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 class SolaceMqttRetainCacheTask(SolaceBrokerCRUDTask):
 
-    OBJECT_KEY = 'mqttRetainCacheName'
+    OBJECT_KEY = 'cacheName'
 
     def __init__(self, module):
         super().__init__(module)
@@ -113,7 +113,7 @@ class SolaceMqttRetainCacheTask(SolaceBrokerCRUDTask):
         return [params['msg_vpn'], params['name']]
 
     def get_func(self, vpn_name, mqtt_retain_cache_name):
-        # GET /msgVpns/{msgVpnName}/mqttRetainCaches/{mqttRetainCacheName}
+        # GET /msgVpns/{msgVpnName}/mqttRetainCaches/{cacheName}
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns',
                       vpn_name, 'mqttRetainCaches', mqtt_retain_cache_name]
         return self.sempv2_api.get_object_settings(self.get_config(), path_array)
@@ -130,13 +130,13 @@ class SolaceMqttRetainCacheTask(SolaceBrokerCRUDTask):
         return self.sempv2_api.make_post_request(self.get_config(), path_array, data)
 
     def update_func(self, vpn_name, mqtt_retain_cache_name, settings=None, delta_settings=None):
-        # PATCH /msgVpns/{msgVpnName}/mqttRetainCaches/{mqttRetainCacheName}
+        # PATCH /msgVpns/{msgVpnName}/mqttRetainCaches/{cacheName}
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns',
                       vpn_name, 'mqttRetainCaches', mqtt_retain_cache_name]
         return self.sempv2_api.make_patch_request(self.get_config(), path_array, settings)
 
     def delete_func(self, vpn_name, mqtt_retain_cache_name):
-        # DELETE /msgVpns/{msgVpnName}/mqttRetainCaches/{mqttRetainCacheName}
+        # DELETE /msgVpns/{msgVpnName}/mqttRetainCaches/{cacheName}
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns',
                       vpn_name, 'mqttRetainCaches', mqtt_retain_cache_name]
         return self.sempv2_api.make_delete_request(self.get_config(), path_array)

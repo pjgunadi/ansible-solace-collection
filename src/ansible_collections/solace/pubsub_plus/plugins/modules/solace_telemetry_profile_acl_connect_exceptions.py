@@ -25,7 +25,7 @@ notes:
   createMsgVpnTelemetryProfileAclConnectException"
 options:
   names:
-    description: The IP address/netmask of the connect exception. Maps to 'aclConnectExceptionAddress' in the SEMP v2 API.
+    description: The IP address/netmask of the connect exception. Maps to 'receiverAclConnectExceptionAddress' in the SEMP v2 API.
     required: true
     type: list
     aliases: [addresses, acl_connect_exception_addresses]
@@ -122,15 +122,15 @@ from ansible.module_utils.basic import AnsibleModule
 
 class SolaceTelemetryProfileAclConnectExceptionsTask(SolaceBrokerCRUDListTask):
 
-    OBJECT_KEY = 'aclConnectExceptionAddress'
+    OBJECT_KEY = 'receiverAclConnectExceptionAddress'
 
     def __init__(self, module):
         super().__init__(module)
 
     def get_objects_path_array(self) -> list:
-        # GET /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/aclConnectExceptions
+        # GET /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/receiverAclConnectExceptions
         params = self.get_config().get_params()
-        return ['msgVpns', params['msg_vpn'], 'telemetryProfiles', params['telemetry_profile_name'], 'aclConnectExceptions']
+        return ['msgVpns', params['msg_vpn'], 'telemetryProfiles', params['telemetry_profile_name'], 'receiverAclConnectExceptions']
 
     def get_objects_result_data_object_key(self) -> str:
         return self.OBJECT_KEY
@@ -140,7 +140,7 @@ class SolaceTelemetryProfileAclConnectExceptionsTask(SolaceBrokerCRUDListTask):
         return [params['msg_vpn'], params['telemetry_profile_name'], object_key]
 
     def create_func(self, vpn_name, telemetry_profile_name, address, settings=None):
-        # POST /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/aclConnectExceptions
+        # POST /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/receiverAclConnectExceptions
         data = {
             'msgVpnName': vpn_name,
             'telemetryProfileName': telemetry_profile_name,
@@ -148,13 +148,13 @@ class SolaceTelemetryProfileAclConnectExceptionsTask(SolaceBrokerCRUDListTask):
         }
         data.update(settings if settings else {})
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name,
-                      'telemetryProfiles', telemetry_profile_name, 'aclConnectExceptions']
+                      'telemetryProfiles', telemetry_profile_name, 'receiverAclConnectExceptions']
         return self.sempv2_api.make_post_request(self.get_config(), path_array, data)
 
     def delete_func(self, vpn_name, telemetry_profile_name, address):
-        # DELETE /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/aclConnectExceptions/{aclConnectExceptionAddress}
+        # DELETE /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/receiverAclConnectExceptions/{aclConnectExceptionAddress}
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name,
-                      'telemetryProfiles', telemetry_profile_name, 'aclConnectExceptions', address]
+                      'telemetryProfiles', telemetry_profile_name, 'receiverAclConnectExceptions', address]
         return self.sempv2_api.make_delete_request(self.get_config(), path_array)
 
 

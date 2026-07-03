@@ -21,7 +21,7 @@ notes:
   createMsgVpnKafkaSenderQueueBinding"
 options:
   name:
-    description: The name of the Queue Binding. Maps to 'queueBindingName' in the API.
+    description: The name of the Queue Binding. Maps to 'queueName' in the API.
     required: true
     type: str
     aliases: [queue_name, queue_binding_name]
@@ -62,7 +62,7 @@ tasks:
     name: my-queue
     kafka_sender_name: my-sender
     settings:
-      kafkaTopicName: my-topic
+      remoteTopic: my-topic
     state: present
 
 - name: remove
@@ -101,7 +101,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 class SolaceKafkaSenderQueueBindingTask(SolaceBrokerCRUDTask):
 
-    OBJECT_KEY = 'queueBindingName'
+    OBJECT_KEY = 'queueName'
 
     def __init__(self, module):
         super().__init__(module)

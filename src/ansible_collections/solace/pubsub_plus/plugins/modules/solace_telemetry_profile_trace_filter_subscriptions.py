@@ -128,61 +128,93 @@ rc:
 '''
 
 from ansible_collections.solace.pubsub_plus.plugins.module_utils import solace_sys  # pylint: disable=unused-import
-from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task import SolaceBrokerCRUDTopicExListTask
-from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_api import SolaceSempV2Api
+from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task import SolaceBrokerCRUDTask
+from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_api import SolaceSempV2Api, SolaceApiError
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task_config import SolaceTaskBrokerConfig
+from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_consts import SolaceTaskOps
 from ansible.module_utils.basic import AnsibleModule
 
 
-class SolaceTelemetryProfileTraceFilterSubscriptionsTask(SolaceBrokerCRUDTopicExListTask):
+class SolaceTelemetryProfileTraceFilterSubscriptionsTask(SolaceBrokerCRUDTask):
 
+    # a subscription is identified by the composite (subscription, subscriptionSyntax);
+    # the URI key order is '{subscription},{subscriptionSyntax}'
     OBJECT_KEY = 'subscription'
-    TOPIC_SYNTAX_KEY = 'subscriptionSyntax'
+    SYNTAX_KEY = 'subscriptionSyntax'
 
     def __init__(self, module):
         super().__init__(module)
+        self.sempv2_api = SolaceSempV2Api(module)
 
-    def get_objects_path_array(self) -> list:
-        # GET .../telemetryProfiles/{telemetryProfileName}/traceFilters/{traceFilterName}/subscriptions
-        params = self.get_config().get_params()
-        return ['msgVpns', params['msg_vpn'], 'telemetryProfiles', params['telemetry_profile_name'],
-                'traceFilters', params['trace_filter_name'], 'subscriptions']
+    def _collection_path_array(self) -> list:
+        p = self.get_module().params
+        return [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', p['msg_vpn'], 'telemetryProfiles',
+                p['telemetry_profile_name'], 'traceFilters', p['trace_filter_name'], 'subscriptions']
 
-    def get_objects_result_data_object_keys(self) -> list:
-        return [self.TOPIC_SYNTAX_KEY, self.OBJECT_KEY]
+    def get_existing(self) -> set:
+        try:
+            data = self.sempv2_api.make_get_request(
+                self.get_config(), self._collection_path_array(), SolaceTaskOps.OP_READ_OBJECT_LIST)
+        except SolaceApiError as e:
+            if e.get_resp()['status_code'] == 404:
+                return set()
+            raise
+        return set((d.get(self.OBJECT_KEY), d.get(self.SYNTAX_KEY))
+                   for d in (data or []) if isinstance(d, dict))
 
-    def get_crud_args(self, object_key) -> list:
-        params = self.get_module().params
-        list = object_key.split(',')
-        if len(list) == 2:
-            subscription_syntax = list[0]
-            subscription = list[1]
-        else:
-            subscription_syntax = params['subscription_syntax']
-            subscription = list[0]
-        return [params['msg_vpn'], params['telemetry_profile_name'], params['trace_filter_name'],
-                subscription_syntax, subscription]
-
-    def create_func(self, vpn_name, telemetry_profile_name, trace_filter_name, subscription_syntax, subscription, settings=None):
-        # POST .../traceFilters/{traceFilterName}/subscriptions
+    def create_one(self, subscription, subscription_syntax):
+        p = self.get_module().params
         data = {
-            'msgVpnName': vpn_name,
-            'telemetryProfileName': telemetry_profile_name,
-            'traceFilterName': trace_filter_name,
-            self.TOPIC_SYNTAX_KEY: subscription_syntax,
-            self.OBJECT_KEY: subscription
+            'msgVpnName': p['msg_vpn'],
+            'telemetryProfileName': p['telemetry_profile_name'],
+            'traceFilterName': p['trace_filter_name'],
+            self.OBJECT_KEY: subscription,
+            self.SYNTAX_KEY: subscription_syntax
         }
-        data.update(settings if settings else {})
-        path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name, 'telemetryProfiles',
-                      telemetry_profile_name, 'traceFilters', trace_filter_name, 'subscriptions']
-        return self.sempv2_api.make_post_request(self.get_config(), path_array, data)
+        return self.sempv2_api.make_post_request(self.get_config(), self._collection_path_array(), data)
 
-    def delete_func(self, vpn_name, telemetry_profile_name, trace_filter_name, subscription_syntax, subscription):
-        # DELETE .../traceFilters/{traceFilterName}/subscriptions/{subscriptionSyntax},{subscription}
-        sub_uri = ','.join([subscription_syntax, subscription])
-        path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name, 'telemetryProfiles',
-                      telemetry_profile_name, 'traceFilters', trace_filter_name, 'subscriptions', sub_uri]
-        return self.sempv2_api.make_delete_request(self.get_config(), path_array)
+    def delete_one(self, subscription, subscription_syntax):
+        sub_uri = ','.join([subscription, subscription_syntax])
+        return self.sempv2_api.make_delete_request(
+            self.get_config(), self._collection_path_array() + [sub_uri])
+
+    def do_task(self):
+        self.validate_params()
+        p = self.get_module().params
+        state = p['state']
+        syntax = p['subscription_syntax']
+        is_check_mode = self.get_module().check_mode
+        # dedupe target, preserve order; each name uses the single subscription_syntax
+        target = []
+        for n in (p['names'] or []):
+            if (n, syntax) not in target:
+                target.append((n, syntax))
+        existing = self.get_existing()
+        added = []
+        deleted = []
+        if state in ('present', 'exactly'):
+            for (sub, syn) in target:
+                if (sub, syn) not in existing:
+                    if not is_check_mode:
+                        self.create_one(sub, syn)
+                    added.append(sub)
+        elif state == 'absent':
+            for (sub, syn) in target:
+                if (sub, syn) in existing:
+                    if not is_check_mode:
+                        self.delete_one(sub, syn)
+                    deleted.append(sub)
+        if state == 'exactly':
+            target_set = set(target)
+            for (sub, syn) in existing:
+                if (sub, syn) not in target_set:
+                    if not is_check_mode:
+                        self.delete_one(sub, syn)
+                    deleted.append(sub)
+        changed = bool(added or deleted)
+        result = self.create_result(rc=0, changed=changed)
+        result['response'] = [{'added': a} for a in added] + [{'deleted': d} for d in deleted]
+        return None, result
 
 
 def run_module():

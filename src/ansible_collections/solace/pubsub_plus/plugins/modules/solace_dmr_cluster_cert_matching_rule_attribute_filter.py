@@ -26,7 +26,7 @@ options:
     type: str
     aliases: [filter_name]
   cert_matching_rule_name:
-    description: The name of the Certificate Matching Rule. Maps to 'certMatchingRuleName' in the API.
+    description: The name of the Certificate Matching Rule. Maps to 'ruleName' in the API.
     required: true
     type: str
   dmr_cluster_name:
@@ -74,7 +74,7 @@ tasks:
       dmr_cluster_name: foo
       settings:
         attributeName: my-attribute
-        filterValue: my-value
+        attributeValue: my-value
       state: present
 '''
 
@@ -127,7 +127,7 @@ class SolaceDmrClusterCertMatchingRuleAttributeFilterTask(SolaceBrokerCRUDTask):
         # POST /dmrClusters/{dmrClusterName}/certMatchingRules/{certMatchingRuleName}/attributeFilters
         data = {
             'dmrClusterName': dmr_cluster_name,
-            'certMatchingRuleName': cert_matching_rule_name,
+            'ruleName': cert_matching_rule_name,
             self.OBJECT_KEY: filter_name
         }
         data.update(settings if settings else {})

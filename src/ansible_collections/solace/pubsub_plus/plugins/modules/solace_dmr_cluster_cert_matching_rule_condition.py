@@ -16,21 +16,18 @@ module: solace_dmr_cluster_cert_matching_rule_condition
 short_description: condition for a dmr cluster certificate matching rule
 description:
 - "Allows addition and removal of Condition Objects on a DMR Cluster Certificate Matching Rule."
-- "A Condition is identified by its source and expression. Both form the object's identifier - to change a Condition, remove the old one and add a new one."
+- "A Condition is identified by its source. The 'expression' and 'attribute' are configured via 'settings'."
 notes:
 - "Module Sempv2 Config: https://docs.solace.com/API-Developer-Online-Ref-Documentation/swagger-ui/config/index.html#/dmrCluster/\
   createDmrClusterCertMatchingRuleCondition"
 options:
-  source:
-    description: The name of the source of the Condition. Maps to 'source' in the API.
+  name:
+    description: The source of the Condition. Maps to 'source' in the API.
     required: true
     type: str
-  expression:
-    description: The expression to match against the source. Maps to 'expression' in the API.
-    required: true
-    type: str
+    aliases: [source]
   cert_matching_rule_name:
-    description: The name of the Certificate Matching Rule. Maps to 'certMatchingRuleName' in the API.
+    description: The name of the Certificate Matching Rule. Maps to 'ruleName' in the API.
     required: true
     type: str
   dmr_cluster_name:
@@ -118,38 +115,42 @@ class SolaceDmrClusterCertMatchingRuleConditionTask(SolaceBrokerCRUDTask):
 
     def get_args(self):
         params = self.get_module().params
-        return [params['dmr_cluster_name'], params['cert_matching_rule_name'], params['source'], params['expression']]
+        return [params['dmr_cluster_name'], params['cert_matching_rule_name'], params['name']]
 
-    def get_func(self, dmr_cluster_name, cert_matching_rule_name, source, expression):
-        # GET /dmrClusters/{dmrClusterName}/certMatchingRules/{certMatchingRuleName}/conditions/{source},{expression}
+    def get_func(self, dmr_cluster_name, cert_matching_rule_name, source):
+        # GET /dmrClusters/{dmrClusterName}/certMatchingRules/{ruleName}/conditions/{source}
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'dmrClusters', dmr_cluster_name,
-                      'certMatchingRules', cert_matching_rule_name, 'conditions', f"{source},{expression}"]
+                      'certMatchingRules', cert_matching_rule_name, 'conditions', source]
         return self.sempv2_api.get_object_settings(self.get_config(), path_array)
 
-    def create_func(self, dmr_cluster_name, cert_matching_rule_name, source, expression, settings=None):
-        # POST /dmrClusters/{dmrClusterName}/certMatchingRules/{certMatchingRuleName}/conditions
+    def create_func(self, dmr_cluster_name, cert_matching_rule_name, source, settings=None):
+        # POST /dmrClusters/{dmrClusterName}/certMatchingRules/{ruleName}/conditions
         data = {
             'dmrClusterName': dmr_cluster_name,
-            'certMatchingRuleName': cert_matching_rule_name,
-            self.OBJECT_KEY: source,
-            'expression': expression
+            'ruleName': cert_matching_rule_name,
+            self.OBJECT_KEY: source
         }
         data.update(settings if settings else {})
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'dmrClusters', dmr_cluster_name,
                       'certMatchingRules', cert_matching_rule_name, 'conditions']
         return self.sempv2_api.make_post_request(self.get_config(), path_array, data)
 
-    def delete_func(self, dmr_cluster_name, cert_matching_rule_name, source, expression):
-        # DELETE /dmrClusters/{dmrClusterName}/certMatchingRules/{certMatchingRuleName}/conditions/{source},{expression}
+    def update_func(self, dmr_cluster_name, cert_matching_rule_name, source, settings=None, delta_settings=None):
+        # PATCH /dmrClusters/{dmrClusterName}/certMatchingRules/{ruleName}/conditions/{source}
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'dmrClusters', dmr_cluster_name,
-                      'certMatchingRules', cert_matching_rule_name, 'conditions', f"{source},{expression}"]
+                      'certMatchingRules', cert_matching_rule_name, 'conditions', source]
+        return self.sempv2_api.make_patch_request(self.get_config(), path_array, settings)
+
+    def delete_func(self, dmr_cluster_name, cert_matching_rule_name, source):
+        # DELETE /dmrClusters/{dmrClusterName}/certMatchingRules/{ruleName}/conditions/{source}
+        path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'dmrClusters', dmr_cluster_name,
+                      'certMatchingRules', cert_matching_rule_name, 'conditions', source]
         return self.sempv2_api.make_delete_request(self.get_config(), path_array)
 
 
 def run_module():
     module_args = dict(
-        source=dict(type='str', required=True),
-        expression=dict(type='str', required=True),
+        name=dict(type='str', required=True, aliases=['source']),
         cert_matching_rule_name=dict(type='str', required=True),
         dmr_cluster_name=dict(type='str', required=True)
     )

@@ -117,9 +117,9 @@ class SolaceGetTelemetryProfileAclConnectExceptionsTask(SolaceBrokerGetPagingTas
         return False
 
     def get_path_array(self, params: dict) -> list:
-        # GET /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/aclConnectExceptions
+        # GET /msgVpns/{msgVpnName}/telemetryProfiles/{telemetryProfileName}/receiverAclConnectExceptions
         return ['msgVpns', params['msg_vpn'], 'telemetryProfiles',
-                params['telemetry_profile_name'], 'aclConnectExceptions']
+                params['telemetry_profile_name'], 'receiverAclConnectExceptions']
 
 
 def run_module():

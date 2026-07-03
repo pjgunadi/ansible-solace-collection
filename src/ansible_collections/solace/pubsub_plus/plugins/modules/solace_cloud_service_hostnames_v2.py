@@ -139,21 +139,28 @@ class SolaceCloudServiceHostnamesV2Task(SolaceCloudCRUDTask):
         names = []
         for d in (data or []):
             if isinstance(d, dict):
-                names.append(d.get(self.OBJECT_KEY) or d.get('name'))
+                # skip the auto-generated, non-deletable default hostname (the primary
+                # 'A' record, e.g. mr-connection-<cepId>...). Only custom (CNAME)
+                # hostnames are user-managed, so state=exactly must not try to delete it.
+                if d.get('dnsRecordType') == 'A':
+                    continue
+                n = d.get(self.OBJECT_KEY) or d.get('name')
             else:
-                names.append(d)
-        return [n for n in names if n]
+                n = d
+            if n:
+                names.append(n)
+        return names
 
     def create_one(self, name):
         data = {self.OBJECT_KEY: name}
         resp = self.solace_cloud_api.make_post_request(
             self.get_config(), self._collection_path_array(), data)
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self.get_module().params[self.get_config().PARAM_SERVICE_ID])
 
     def delete_one(self, name):
         resp = self.solace_cloud_api.make_delete_request(
             self.get_config(), self._collection_path_array() + [name])
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self.get_module().params[self.get_config().PARAM_SERVICE_ID])
 
     def do_task(self):
         self.validate_params()

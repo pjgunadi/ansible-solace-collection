@@ -1054,6 +1054,9 @@ class SolaceCloudApiV2(SolaceCloudApi):
     # API groups / resources
     API_MISSION_CONTROL = "missionControl"
     API_EVENT_BROKER_SERVICES = "eventBrokerServices"
+    API_CLIENT_PROFILES = "clientProfiles"
+    API_CONNECTION_ENDPOINTS = "connectionEndpoints"
+    API_DNS_NAMES = "dnsNames"
 
     def __init__(self, module: AnsibleModule):
         super().__init__(module)
@@ -1147,9 +1150,14 @@ class SolaceCloudApiV2(SolaceCloudApi):
             self.API_EVENT_BROKER_SERVICES, service_id, self.API_OPERATIONS, operation_id]
         return self.make_get_request(config, path_array, SolaceTaskOps.OP_READ_OBJECT)
 
-    def wait_for_operation(self, config: SolaceTaskSolaceCloudConfig, operation: dict, timeout_minutes: int) -> dict:
+    def wait_for_operation(self, config: SolaceTaskSolaceCloudConfig, operation: dict, timeout_minutes: int, service_id: str = None) -> dict:
+        # operations are always polled under the event broker service. for a service-level
+        # operation (e.g. create) the operation's resourceId IS the serviceId; for a
+        # sub-resource operation (client profile, dns name, ...) the resourceId is the
+        # sub-resource path, so the caller must pass the owning service_id explicitly.
         module_op = SolaceTaskOps.OP_READ_OBJECT
-        service_id = operation.get('resourceId')
+        if not service_id:
+            service_id = operation.get('resourceId')
         operation_id = operation.get('id')
         if not service_id or not operation_id:
             raise SolaceApiError(None, dict(
@@ -1162,7 +1170,15 @@ class SolaceCloudApiV2(SolaceCloudApi):
         max_retries = (timeout_minutes * 60) // delay
         resp = operation
         while not is_done and not is_failed and try_count < max_retries:
-            resp = self.get_operation(config, service_id, operation_id)
+            try:
+                resp = self.get_operation(config, service_id, operation_id)
+            except SolaceApiError as e:
+                # once a service (or sub-resource owner) is deleted, its operations
+                # endpoint 404s. For a delete operation that means it completed.
+                if e.get_resp().get('status_code') == 404:
+                    is_done = True
+                    break
+                raise
             status = resp.get('status')
             is_done = (status == self.OPERATION_STATUS_SUCCEEDED)
             is_failed = (status == self.OPERATION_STATUS_FAILED)
@@ -1179,10 +1195,10 @@ class SolaceCloudApiV2(SolaceCloudApi):
                 self.get_module()._name, module_op)
         return resp
 
-    def _maybe_wait_for_operation(self, config: SolaceTaskSolaceCloudConfig, resp, wait_timeout_minutes: int):
+    def _maybe_wait_for_operation(self, config: SolaceTaskSolaceCloudConfig, resp, wait_timeout_minutes: int, service_id: str = None):
         # if the response is an async operation and waiting is requested, poll to completion
         if wait_timeout_minutes and wait_timeout_minutes > 0 and self._is_operation(resp):
-            return self.wait_for_operation(config, resp, wait_timeout_minutes)
+            return self.wait_for_operation(config, resp, wait_timeout_minutes, service_id)
         return resp
 
     # ---------------------------------------------------------------------

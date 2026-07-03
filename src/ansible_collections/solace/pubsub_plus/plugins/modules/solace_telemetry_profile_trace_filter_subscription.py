@@ -138,7 +138,7 @@ class SolaceTelemetryProfileTraceFilterSubscriptionTask(SolaceBrokerCRUDTask):
 
     def get_func(self, vpn_name, telemetry_profile_name, trace_filter_name, subscription_syntax, subscription):
         # GET .../traceFilters/{traceFilterName}/subscriptions/{subscriptionSyntax},{subscription}
-        sub_uri = ','.join([subscription_syntax, subscription])
+        sub_uri = ','.join([subscription, subscription_syntax])
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name, 'telemetryProfiles',
                       telemetry_profile_name, 'traceFilters', trace_filter_name, 'subscriptions', sub_uri]
         return self.sempv2_api.get_object_settings(self.get_config(), path_array)
@@ -159,7 +159,7 @@ class SolaceTelemetryProfileTraceFilterSubscriptionTask(SolaceBrokerCRUDTask):
 
     def delete_func(self, vpn_name, telemetry_profile_name, trace_filter_name, subscription_syntax, subscription):
         # DELETE .../traceFilters/{traceFilterName}/subscriptions/{subscriptionSyntax},{subscription}
-        sub_uri = ','.join([subscription_syntax, subscription])
+        sub_uri = ','.join([subscription, subscription_syntax])
         path_array = [SolaceSempV2Api.API_BASE_SEMPV2_CONFIG, 'msgVpns', vpn_name, 'telemetryProfiles',
                       telemetry_profile_name, 'traceFilters', trace_filter_name, 'subscriptions', sub_uri]
         return self.sempv2_api.make_delete_request(self.get_config(), path_array)

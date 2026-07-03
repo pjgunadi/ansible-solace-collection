@@ -52,7 +52,7 @@
         name: "{{ queue }}"
         kafka_sender_name: "{{ sender }}"
         settings:
-          kafkaTopicName: "asct-topic"
+          remoteTopic: "asct-topic"
         state: present
 
     - name: "get queue bindings"

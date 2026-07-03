@@ -95,8 +95,9 @@ rc:
 
 from ansible_collections.solace.pubsub_plus.plugins.module_utils import solace_sys  # pylint: disable=unused-import
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task import SolaceCloudCRUDTask
-from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_api import SolaceCloudApiV2
+from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_api import SolaceCloudApiV2, SolaceApiError
 from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_task_config import SolaceTaskSolaceCloudServiceConfig
+from ansible_collections.solace.pubsub_plus.plugins.module_utils.solace_consts import SolaceTaskOps
 from ansible.module_utils.basic import AnsibleModule
 
 
@@ -125,8 +126,19 @@ class SolaceCloudServiceHostnameV2Task(SolaceCloudCRUDTask):
         return [self.get_module().params['name']]
 
     def get_func(self, name):
-        # GET .../connectionEndpoints/{cepId}/dnsNames/{dnsName}
-        return self.solace_cloud_api.get_object_settings(self.get_config(), self._base_path_array(name))
+        # the v2 API does not support GET on an individual dnsName (405); list the
+        # collection and find it instead.
+        try:
+            data = self.solace_cloud_api.make_get_request(
+                self.get_config(), self._base_path_array(), SolaceTaskOps.OP_READ_OBJECT_LIST)
+        except SolaceApiError as e:
+            if e.get_resp()['status_code'] == 404:
+                return None
+            raise
+        for d in (data or []):
+            if isinstance(d, dict) and (d.get(self.OBJECT_KEY) == name or d.get('name') == name):
+                return d
+        return None
 
     def create_func(self, name, settings=None):
         # POST .../connectionEndpoints/{cepId}/dnsNames
@@ -134,13 +146,13 @@ class SolaceCloudServiceHostnameV2Task(SolaceCloudCRUDTask):
         data.update(settings if settings else {})
         resp = self.solace_cloud_api.make_post_request(
             self.get_config(), self._base_path_array(), data)
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self.get_module().params[self.get_config().PARAM_SERVICE_ID])
 
     def delete_func(self, name):
         # DELETE .../connectionEndpoints/{cepId}/dnsNames/{dnsName}
         resp = self.solace_cloud_api.make_delete_request(
             self.get_config(), self._base_path_array(name))
-        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait())
+        return self.solace_cloud_api._maybe_wait_for_operation(self.get_config(), resp, self._wait(), self.get_module().params[self.get_config().PARAM_SERVICE_ID])
 
 
 def run_module():

@@ -27,8 +27,8 @@
     solace.pubsub_plus.solace_oauth_profile_default_vpn_exception: *bc
     solace.pubsub_plus.solace_oauth_profile_resource_server_required_claim: *bc
   vars:
-    profile: "asct-broker-oauth"
-    access_group: "asct-group"
+    profile: "asct_broker_oauth"
+    access_group: "asct_group"
   tasks:
     - name: "clean start"
       solace_oauth_profile:
@@ -63,7 +63,7 @@
 
     - name: "add client authorization parameter"
       solace_oauth_profile_client_authz_param:
-        name: "asct-param"
+        name: "asct_param"
         oauth_profile_name: "{{ profile }}"
         settings:
           authorizationParameterValue: "asct-value"
@@ -71,7 +71,7 @@
 
     - name: "add client required claim"
       solace_oauth_profile_client_required_claim:
-        name: "asct-client-claim"
+        name: "asct_client_claim"
         oauth_profile_name: "{{ profile }}"
         settings:
           clientRequiredClaimValue: '"asct-value"'
@@ -85,7 +85,7 @@
 
     - name: "add resource server required claim"
       solace_oauth_profile_resource_server_required_claim:
-        name: "asct-rs-claim"
+        name: "asct_rs_claim"
         oauth_profile_name: "{{ profile }}"
         settings:
           resourceServerRequiredClaimValue: '"asct-value"'
@@ -110,12 +110,12 @@
         state: absent
     - name: "remove client authorization parameter"
       solace_oauth_profile_client_authz_param:
-        name: "asct-param"
+        name: "asct_param"
         oauth_profile_name: "{{ profile }}"
         state: absent
     - name: "remove client required claim"
       solace_oauth_profile_client_required_claim:
-        name: "asct-client-claim"
+        name: "asct_client_claim"
         oauth_profile_name: "{{ profile }}"
         state: absent
     - name: "remove default vpn exception"
@@ -125,7 +125,7 @@
         state: absent
     - name: "remove resource server required claim"
       solace_oauth_profile_resource_server_required_claim:
-        name: "asct-rs-claim"
+        name: "asct_rs_claim"
         oauth_profile_name: "{{ profile }}"
         state: absent
     - name: "remove oauth profile"
